@@ -1,36 +1,100 @@
 import 'package:coffeshop_mobile/feature/auth/data/datasources/auth_datasource.dart';
+import 'package:coffeshop_mobile/feature/auth/data/datasources/remote/auth_remote_datasource.dart';
 import 'package:coffeshop_mobile/feature/auth/data/models/auth_hive_model.dart';
 import 'package:coffeshop_mobile/feature/auth/domain/entities/auth_entity.dart';
 import 'package:coffeshop_mobile/feature/auth/domain/repositories/auth_repository.dart';
 
 class AuthRepositoryImpl implements IAuthRepository {
-  final IAuthDataSource dataSource;
-  AuthRepositoryImpl(this.dataSource);
+  final IAuthDataSource localDataSource;
+  final AuthRemoteDatasource remoteDataSource;
+
+  AuthRepositoryImpl(this.localDataSource, this.remoteDataSource);
 
   @override
   Future<AuthEntity?> login(String email, String password) async {
-    final user = await dataSource.getUserByEmail(email);
-    if (user == null || user.password != password) return null;
-    await dataSource.saveCurrentUserId(user.id);
-    return user.toEntity();
+    // 1. Try remote login
+    final remoteUser = await remoteDataSource.login(email, password);
+    if (remoteUser != null) {
+      // Save to Hive cache
+      final hiveModel = AuthHiveModel.fromEntity(remoteUser);
+      hiveModel.password = password; // store password for offline fallback
+      await localDataSource.saveUser(hiveModel);
+      await localDataSource.saveCurrentUserId(remoteUser.id!);
+      return remoteUser;
+    }
+
+    // 2. Fallback to Hive cache
+    final localUser = await localDataSource.getUserByEmail(email);
+    if (localUser != null && localUser.password == password) {
+      await localDataSource.saveCurrentUserId(localUser.id);
+      return localUser.toEntity();
+    }
+
+    return null;
   }
 
   @override
   Future<bool> register(AuthEntity entity) async {
-    final existing = await dataSource.getUserByEmail(entity.email);
+    // 1. Try remote register
+    final success = await remoteDataSource.register(entity);
+    if (success) {
+      // Cache user details locally
+      await localDataSource.saveUser(AuthHiveModel.fromEntity(entity));
+      return true;
+    }
+
+    // 2. Local fallback
+    final existing = await localDataSource.getUserByEmail(entity.email);
     if (existing != null) return false;
-    await dataSource.saveUser(AuthHiveModel.fromEntity(entity));
+    await localDataSource.saveUser(AuthHiveModel.fromEntity(entity));
     return true;
   }
 
   @override
   Future<AuthEntity?> getCurrentUser() async {
-    final id = await dataSource.getCurrentUserId();
+    // Try retrieving local current user ID first
+    final id = await localDataSource.getCurrentUserId();
     if (id == null) return null;
-    final user = await dataSource.getUserById(id);
-    return user?.toEntity();
+
+    // Try fetching from remote to ensure sync
+    final remoteUser = await remoteDataSource.getCurrentUser();
+    if (remoteUser != null) {
+      final hiveModel = AuthHiveModel.fromEntity(remoteUser);
+      // Fetch password from existing local cache if there to preserve it
+      final cached = await localDataSource.getUserById(id);
+      if (cached != null) {
+        hiveModel.password = cached.password;
+      }
+      await localDataSource.saveUser(hiveModel);
+      return remoteUser;
+    }
+
+    // Fallback to local
+    final localUser = await localDataSource.getUserById(id);
+    return localUser?.toEntity();
   }
 
   @override
-  Future<void> logout() => dataSource.clearSession();
+  Future<void> logout() async {
+    await remoteDataSource.logout();
+    await localDataSource.clearSession();
+  }
+
+  // Helper method for updating user profile and syncing
+  Future<AuthEntity?> updateProfile(AuthEntity entity) async {
+    final updatedUser = await remoteDataSource.updateProfile(entity);
+    if (updatedUser != null) {
+      final hiveModel = AuthHiveModel.fromEntity(updatedUser);
+      final id = await localDataSource.getCurrentUserId();
+      if (id != null) {
+        final cached = await localDataSource.getUserById(id);
+        if (cached != null) {
+          hiveModel.password = cached.password;
+        }
+      }
+      await localDataSource.saveUser(hiveModel);
+      return updatedUser;
+    }
+    return null;
+  }
 }

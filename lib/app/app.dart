@@ -1,5 +1,4 @@
 import 'package:coffeshop_mobile/app/routes/app_routes.dart';
-import 'package:coffeshop_mobile/app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class CoffeeShopApp extends StatelessWidget {

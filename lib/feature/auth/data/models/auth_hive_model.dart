@@ -21,6 +21,9 @@ class AuthHiveModel extends HiveObject {
   @HiveField(4)
   String? phone;
 
+  @HiveField(5)
+  String? profilePicture;
+
   AuthHiveModel();
 
   AuthHiveModel.withData({
@@ -29,6 +32,7 @@ class AuthHiveModel extends HiveObject {
     required this.email,
     required this.password,
     this.phone,
+    this.profilePicture,
   });
 
   AuthEntity toEntity() => AuthEntity(
@@ -37,6 +41,7 @@ class AuthHiveModel extends HiveObject {
         email: email,
         password: password,
         phone: phone,
+        profilePicture: profilePicture,
       );
 
   static AuthHiveModel fromEntity(AuthEntity entity) =>
@@ -47,5 +52,6 @@ class AuthHiveModel extends HiveObject {
         email: entity.email,
         password: entity.password,
         phone: entity.phone,
+        profilePicture: entity.profilePicture,
       );
 }

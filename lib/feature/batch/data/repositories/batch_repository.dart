@@ -1,15 +1,15 @@
 import 'package:dartz/dartz.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:coffeshop_app/core/error/failures.dart';
-import 'package:coffeshop_app/core/services/connectivity/network_info.dart';
-import 'package:coffeshop_app/features/batch/data/datasources/batch_datasource.dart';
-import 'package:coffeshop_app/features/batch/data/datasources/local/batch_local_datasource.dart';
-import 'package:coffeshop_app/features/batch/data/datasources/remote/batch_remote_datasource.dart';
-import 'package:coffeshop_app/features/batch/data/models/batch_api_model.dart';
-import 'package:coffeshop_app/features/batch/data/models/batch_hive_model.dart';
-import 'package:coffeshop_app/features/batch/domain/entities/batch_entity.dart';
-import 'package:coffeshop_app/features/batch/domain/repositories/batch_repository.dart';
+import 'package:coffeshop_mobile/core/error/failures.dart';
+import 'package:coffeshop_mobile/core/services/connectivitly/network_info.dart';
+import 'package:coffeshop_mobile/feature/batch/data/datasources/batch_datasource.dart';
+import 'package:coffeshop_mobile/feature/batch/data/datasources/local/batch_local_datasource.dart';
+import 'package:coffeshop_mobile/feature/batch/data/datasources/remote/batch_remote_datasource.dart';
+import 'package:coffeshop_mobile/feature/batch/data/models/batch_api_model.dart';
+import 'package:coffeshop_mobile/feature/batch/data/models/batch_hive_model.dart';
+import 'package:coffeshop_mobile/feature/batch/domain/entities/batch_entity.dart';
+import 'package:coffeshop_mobile/feature/batch/domain/repositories/batch_repositories.dart';
 
 // Create provider
 final batchRepositoryProvider = Provider<IBatchRepository>((ref) {

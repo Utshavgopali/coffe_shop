@@ -1,7 +1,9 @@
 import 'package:coffeshop_mobile/app/theme/app_colors.dart';
+import 'package:coffeshop_mobile/feature/auth/presentation/view_model/auth_view_model.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
   static const _montserrat = 'Montserrat';
@@ -85,7 +87,10 @@ class HomeScreen extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authViewModelProvider).user;
+    final firstName = user != null ? user.fullName.split(' ').first : 'Coffee Lover';
+
     return Scaffold(
       backgroundColor: const Color(0xFFFAF6F1),
       body: SafeArea(
@@ -100,17 +105,17 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          'Good morning ☕',
-                          style: TextStyle(
+                          'Good morning, $firstName ☕',
+                          style: const TextStyle(
                             fontFamily: _montserrat,
                             fontSize: 13,
                             color: Colors.black45,
                           ),
                         ),
-                        SizedBox(height: 2),
-                        Text(
+                        const SizedBox(height: 2),
+                        const Text(
                           'Find your perfect bean',
                           style: TextStyle(
                             fontFamily: _montserrat,
@@ -124,11 +129,16 @@ class HomeScreen extends StatelessWidget {
                     CircleAvatar(
                       radius: 21,
                       backgroundColor: AppColors.primary,
-                      child: const Icon(
-                        Icons.person,
-                        color: Colors.white,
-                        size: 22,
-                      ),
+                      backgroundImage: user?.profilePicture != null && user!.profilePicture!.isNotEmpty
+                          ? NetworkImage(user.profilePicture!)
+                          : null,
+                      child: user?.profilePicture == null || user!.profilePicture!.isEmpty
+                          ? const Icon(
+                              Icons.person,
+                              color: Colors.white,
+                              size: 22,
+                            )
+                          : null,
                     ),
                   ],
                 ),

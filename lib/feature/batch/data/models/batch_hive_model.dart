@@ -1,4 +1,3 @@
-import 'package:coffeshop_mobile/core/constants/hive_table_constant.dart';
 import 'package:coffeshop_mobile/feature/batch/domain/entities/batch_entity.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
