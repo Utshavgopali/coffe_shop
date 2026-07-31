@@ -3,6 +3,5 @@ class HiveTableConstant {
 
   static const int userTableId = 0;
   static const String userBoxName = 'user_box';
-  static const String sessionBoxName = 'session_box';
-  static const String currentUserKey = 'current_user_id';
+  static const String cachedUserKey = 'cached_user';
 }
