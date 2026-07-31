@@ -1,5 +1,10 @@
+import 'package:coffeshop_mobile/app/locale/app_strings.dart';
+import 'package:coffeshop_mobile/app/locale/locale_view_model.dart';
 import 'package:coffeshop_mobile/app/routes/app_routes.dart';
 import 'package:coffeshop_mobile/app/theme/app_colors.dart';
+import 'package:coffeshop_mobile/core/services/biometric/biometric_service.dart';
+import 'package:coffeshop_mobile/core/services/storage/session_service.dart';
+import 'package:coffeshop_mobile/feature/auth/presentation/pages/forgot_password_page.dart';
 import 'package:coffeshop_mobile/feature/auth/presentation/pages/signup_page.dart';
 import 'package:coffeshop_mobile/feature/auth/presentation/state/auth_state.dart';
 import 'package:coffeshop_mobile/feature/auth/presentation/view_model/auth_view_model.dart';
@@ -18,6 +23,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscure = true;
+  bool _showBiometricButton = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricAvailability();
+  }
+
+  Future<void> _checkBiometricAvailability() async {
+    final session = ref.read(sessionServiceProvider);
+    if (!session.isBiometricLoginEnabled()) return;
+
+    final canUse = await ref.read(biometricServiceProvider).canCheckBiometrics();
+    if (mounted) {
+      setState(() => _showBiometricButton = canUse);
+    }
+  }
+
+  Future<void> _loginWithBiometric() async {
+    await ref.read(authViewModelProvider.notifier).loginWithBiometric();
+  }
+
+  Future<void> _loginWithGoogle() async {
+    await ref.read(authViewModelProvider.notifier).loginWithGoogle();
+  }
 
   @override
   void dispose() {
@@ -36,16 +66,17 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authViewModelProvider, (previous, next) {
-      if (next.status == AuthStatus.success) {
+      if (next.status == AuthStatus.authenticated) {
         Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
       }
     });
 
     final authState = ref.watch(authViewModelProvider);
     final isLoading = authState.status == AuthStatus.loading;
+    final lang = ref.watch(localeViewModelProvider).language;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appBackground,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -57,10 +88,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 const SizedBox(height: 32),
                 Center(
                   child: Image.asset(
-                    'assets/images/logo.jpg',
-                    height: 80,
-                    width: 80,
-                    fit: BoxFit.cover,
+                    'assets/images/logo_mark.png',
+                    height: 88,
+                    width: 88,
+                    fit: BoxFit.contain,
                     errorBuilder: (_, __, ___) => const Icon(
                       Icons.coffee,
                       size: 80,
@@ -81,11 +112,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Center(
+                Center(
                   child: Text(
-                    'Welcome back! Sign in to continue.',
+                    AppStrings.get('welcomeBackSignIn', lang),
                     style: TextStyle(
-                      color: AppColors.grey,
+                      color: context.appTextSecondary,
                       fontFamily: 'Montserrat',
                     ),
                   ),
@@ -98,19 +129,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      border: Border.all(color: Colors.red.shade200),
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline,
-                            color: Colors.red.shade600, size: 18),
+                        const Icon(Icons.error_outline, color: AppColors.error, size: 18),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             authState.errorMessage!,
-                            style: TextStyle(color: Colors.red.shade700),
+                            style: const TextStyle(color: AppColors.error),
                           ),
                         ),
                       ],
@@ -128,14 +158,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           .clearError();
                     }
                   },
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
+                  decoration: InputDecoration(
+                    labelText: AppStrings.get('email', lang),
                     prefixIcon:
-                        Icon(Icons.email_outlined, color: AppColors.primary),
+                        const Icon(Icons.email_outlined, color: AppColors.primary),
                   ),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Email is required';
-                    if (!v.contains('@')) return 'Enter a valid email';
+                    if (v == null || v.isEmpty) return AppStrings.get('emailIsRequired', lang);
+                    if (!v.contains('@')) return AppStrings.get('enterAValidEmail', lang);
                     return null;
                   },
                 ),
@@ -146,25 +176,40 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   controller: _passwordCtrl,
                   obscureText: _obscure,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: AppStrings.get('password', lang),
                     prefixIcon: const Icon(Icons.lock_outline,
                         color: AppColors.primary),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscure ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.grey,
+                        color: context.appTextSecondary,
                       ),
                       onPressed: () =>
                           setState(() => _obscure = !_obscure),
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Password is required';
-                    if (v.length < 6) return 'Minimum 6 characters';
+                    if (v == null || v.isEmpty) return AppStrings.get('passwordIsRequired', lang);
+                    if (v.length < 6) return AppStrings.get('minimum6Characters', lang);
                     return null;
                   },
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 8),
+
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ForgotPasswordPage()),
+                    ),
+                    child: Text(
+                      AppStrings.get('forgotPassword', lang),
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
 
                 // Login button
                 SizedBox(
@@ -181,14 +226,103 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               strokeWidth: 2.5,
                             ),
                           )
-                        : const Text(
-                            'Login',
-                            style: TextStyle(
+                        : Text(
+                            AppStrings.get('login', lang),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               fontFamily: 'Montserrat',
                             ),
                           ),
+                  ),
+                ),
+
+                if (_showBiometricButton) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: isLoading ? null : _loginWithBiometric,
+                      icon: const Icon(Icons.fingerprint, color: AppColors.primary),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.primary, width: 1.5),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      label: Text(
+                        AppStrings.get('loginWithFingerprint', lang),
+                        style: const TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+
+                // Divider
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: context.appBorder)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        AppStrings.get('orContinueWith', lang),
+                        style: TextStyle(
+                          fontFamily: 'Montserrat',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: context.appTextSecondary,
+                        ),
+                      ),
+                    ),
+                    Expanded(child: Divider(color: context.appBorder)),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                // Google sign-in
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: isLoading ? null : _loginWithGoogle,
+                    icon: Container(
+                      width: 22,
+                      height: 22,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: context.appSurface,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: context.appBorder),
+                      ),
+                      child: const Text(
+                        'G',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF4285F4),
+                        ),
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: context.appBorder, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    label: Text(
+                      AppStrings.get('continueWithGoogle', lang),
+                      style: TextStyle(
+                        fontFamily: 'Montserrat',
+                        fontWeight: FontWeight.bold,
+                        color: context.appTextPrimary,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -197,9 +331,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "Don't have an account?",
-                      style: TextStyle(color: AppColors.grey),
+                    Text(
+                      AppStrings.get('dontHaveAccount', lang),
+                      style: TextStyle(color: context.appTextSecondary),
                     ),
                     TextButton(
                       onPressed: () => Navigator.push(
@@ -207,9 +341,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         MaterialPageRoute(
                             builder: (_) => const SignupPage()),
                       ),
-                      child: const Text(
-                        'Sign up',
-                        style: TextStyle(
+                      child: Text(
+                        AppStrings.get('signUp', lang),
+                        style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                         ),

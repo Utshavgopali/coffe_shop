@@ -1,3 +1,5 @@
+import 'package:coffeshop_mobile/app/locale/app_strings.dart';
+import 'package:coffeshop_mobile/app/locale/locale_view_model.dart';
 import 'package:coffeshop_mobile/app/theme/app_colors.dart';
 import 'package:coffeshop_mobile/feature/auth/presentation/state/auth_state.dart';
 import 'package:coffeshop_mobile/feature/auth/presentation/view_model/auth_view_model.dart';
@@ -15,16 +17,25 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
   bool _obscure = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Auth state is shared app-wide, so a stale error from a previous
+    // failed login (or an earlier signup attempt) would otherwise still
+    // be showing here even though the user hasn't submitted anything yet.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(authViewModelProvider.notifier).clearError();
+    });
+  }
+
+  @override
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
-    _phoneCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();
     super.dispose();
@@ -33,20 +44,19 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     await ref.read(authViewModelProvider.notifier).register(
-          fullName: _nameCtrl.text.trim(),
+          name: _nameCtrl.text.trim(),
           email: _emailCtrl.text.trim(),
           password: _passwordCtrl.text,
-          phone: _phoneCtrl.text.trim(),
         );
   }
 
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authViewModelProvider, (previous, next) {
-      if (next.status == AuthStatus.success) {
+      if (next.status == AuthStatus.registered) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Account created! Please login.'),
+          SnackBar(
+            content: Text(AppStrings.get('accountCreatedPleaseLogin', ref.read(localeViewModelProvider).language)),
             backgroundColor: AppColors.primary,
           ),
         );
@@ -56,11 +66,12 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
     final authState = ref.watch(authViewModelProvider);
     final isLoading = authState.status == AuthStatus.loading;
+    final lang = ref.watch(localeViewModelProvider).language;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: context.appBackground,
       appBar: AppBar(
-        title: const Text('Create Account'),
+        title: Text(AppStrings.get('createAccount', lang)),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -70,9 +81,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Join Coffee Shop',
-                  style: TextStyle(
+                Text(
+                  AppStrings.get('joinCoffeeShop', lang),
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: AppColors.primaryDark,
@@ -80,10 +91,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'Create an account to start ordering your favourite beans.',
+                Text(
+                  AppStrings.get('createAccountSubtitle', lang),
                   style: TextStyle(
-                    color: AppColors.grey,
+                    color: context.appTextSecondary,
                     fontFamily: 'Montserrat',
                   ),
                 ),
@@ -95,19 +106,18 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.only(bottom: 16),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade50,
-                      border: Border.all(color: Colors.red.shade200),
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(
                       children: [
-                        Icon(Icons.error_outline,
-                            color: Colors.red.shade600, size: 18),
+                        const Icon(Icons.error_outline, color: AppColors.error, size: 18),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             authState.errorMessage!,
-                            style: TextStyle(color: Colors.red.shade700),
+                            style: const TextStyle(color: AppColors.error),
                           ),
                         ),
                       ],
@@ -116,15 +126,15 @@ class _SignupPageState extends ConsumerState<SignupPage> {
 
                 _buildField(
                   controller: _nameCtrl,
-                  label: 'Full name',
+                  label: AppStrings.get('fullName', lang),
                   icon: Icons.person_outline,
                   validator: (v) =>
-                      v == null || v.isEmpty ? 'Name is required' : null,
+                      v == null || v.isEmpty ? AppStrings.get('nameIsRequired', lang) : null,
                 ),
                 const SizedBox(height: 14),
                 _buildField(
                   controller: _emailCtrl,
-                  label: 'Email',
+                  label: AppStrings.get('email', lang),
                   icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                   onChanged: (_) {
@@ -135,17 +145,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                     }
                   },
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Email is required';
-                    if (!v.contains('@')) return 'Enter a valid email';
+                    if (v == null || v.isEmpty) return AppStrings.get('emailIsRequired', lang);
+                    if (!v.contains('@')) return AppStrings.get('enterAValidEmail', lang);
                     return null;
                   },
-                ),
-                const SizedBox(height: 14),
-                _buildField(
-                  controller: _phoneCtrl,
-                  label: 'Phone (optional)',
-                  icon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 14),
 
@@ -154,21 +157,21 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                   controller: _passwordCtrl,
                   obscureText: _obscure,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: AppStrings.get('password', lang),
                     prefixIcon: const Icon(Icons.lock_outline,
                         color: AppColors.primary),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscure ? Icons.visibility_off : Icons.visibility,
-                        color: AppColors.grey,
+                        color: context.appTextSecondary,
                       ),
                       onPressed: () =>
                           setState(() => _obscure = !_obscure),
                     ),
                   ),
                   validator: (v) {
-                    if (v == null || v.isEmpty) return 'Password is required';
-                    if (v.length < 6) return 'Minimum 6 characters';
+                    if (v == null || v.isEmpty) return AppStrings.get('passwordIsRequired', lang);
+                    if (v.length < 6) return AppStrings.get('minimum6Characters', lang);
                     return null;
                   },
                 ),
@@ -178,14 +181,14 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 TextFormField(
                   controller: _confirmCtrl,
                   obscureText: _obscure,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirm password',
-                    prefixIcon: Icon(Icons.lock_outline,
+                  decoration: InputDecoration(
+                    labelText: AppStrings.get('confirmPassword', lang),
+                    prefixIcon: const Icon(Icons.lock_outline,
                         color: AppColors.primary),
                   ),
                   validator: (v) {
                     if (v != _passwordCtrl.text) {
-                      return 'Passwords do not match';
+                      return AppStrings.get('passwordsDoNotMatch', lang);
                     }
                     return null;
                   },
@@ -207,9 +210,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                               strokeWidth: 2.5,
                             ),
                           )
-                        : const Text(
-                            'Create account',
-                            style: TextStyle(
+                        : Text(
+                            AppStrings.get('createAccountButton', lang),
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               fontFamily: 'Montserrat',
@@ -222,15 +225,23 @@ class _SignupPageState extends ConsumerState<SignupPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Already have an account?',
-                      style: TextStyle(color: AppColors.grey),
+                    Text(
+                      AppStrings.get('alreadyHaveAccount', lang),
+                      style: TextStyle(color: context.appTextSecondary),
                     ),
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text(
-                        'Login',
-                        style: TextStyle(
+                      onPressed: () {
+                        // Login isn't rebuilt from scratch on pop (it's the
+                        // same still-mounted instance) so its own initState
+                        // won't rerun to clear this — a failed signup's
+                        // error would otherwise reappear on the login
+                        // screen underneath.
+                        ref.read(authViewModelProvider.notifier).clearError();
+                        Navigator.pop(context);
+                      },
+                      child: Text(
+                        AppStrings.get('login', lang),
+                        style: const TextStyle(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                         ),

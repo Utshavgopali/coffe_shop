@@ -1,7 +1,8 @@
-import 'package:coffeshop_mobile/feature/auth/domain/entities/auth_entity.dart';
 import 'package:equatable/equatable.dart';
 
-enum AuthStatus { initial, loading, success, error, loggedOut }
+import '../../domain/entities/auth_entity.dart';
+
+enum AuthStatus { initial, loading, authenticated, registered, error, loggedOut }
 
 class AuthState extends Equatable {
   final AuthStatus status;

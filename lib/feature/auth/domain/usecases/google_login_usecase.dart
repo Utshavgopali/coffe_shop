@@ -7,15 +7,17 @@ import '../../data/repositories/auth_repository.dart';
 import '../entities/auth_entity.dart';
 import '../repositories/auth_repository.dart';
 
-final getCurrentUserUsecaseProvider = Provider<GetCurrentUserUsecase>((ref) {
-  return GetCurrentUserUsecase(ref.read(authRepositoryProvider));
+final googleLoginUsecaseProvider = Provider<GoogleLoginUsecase>((ref) {
+  return GoogleLoginUsecase(ref.read(authRepositoryProvider));
 });
 
-class GetCurrentUserUsecase implements UsecaseWithoutParams<AuthEntity> {
+class GoogleLoginUsecase implements UsecaseWithParams<AuthEntity, String> {
   final IAuthRepository _repository;
 
-  GetCurrentUserUsecase(this._repository);
+  GoogleLoginUsecase(this._repository);
 
   @override
-  Future<Either<Failure, AuthEntity>> call() => _repository.getCurrentUser();
+  Future<Either<Failure, AuthEntity>> call(String idToken) {
+    return _repository.loginWithGoogle(idToken);
+  }
 }

@@ -1,6 +1,7 @@
-import 'package:coffeshop_mobile/core/constants/hive_table_constant.dart';
-import 'package:coffeshop_mobile/feature/auth/domain/entities/auth_entity.dart';
 import 'package:hive/hive.dart';
+
+import '../../../../core/constants/hive_table_constant.dart';
+import '../../domain/entities/auth_entity.dart';
 
 part 'auth_hive_model.g.dart';
 
@@ -10,48 +11,46 @@ class AuthHiveModel extends HiveObject {
   late String id;
 
   @HiveField(1)
-  late String fullName;
+  late String name;
 
   @HiveField(2)
   late String email;
 
   @HiveField(3)
-  late String password;
+  String? avatar;
 
   @HiveField(4)
-  String? phone;
+  late String role;
 
   @HiveField(5)
-  String? profilePicture;
+  late String provider;
 
   AuthHiveModel();
 
   AuthHiveModel.withData({
     required this.id,
-    required this.fullName,
+    required this.name,
     required this.email,
-    required this.password,
-    this.phone,
-    this.profilePicture,
+    this.avatar,
+    this.role = 'user',
+    this.provider = 'local',
   });
 
   AuthEntity toEntity() => AuthEntity(
         id: id,
-        fullName: fullName,
+        name: name,
         email: email,
-        password: password,
-        phone: phone,
-        profilePicture: profilePicture,
+        avatar: avatar,
+        role: role,
+        provider: provider,
       );
 
-  static AuthHiveModel fromEntity(AuthEntity entity) =>
-      AuthHiveModel.withData(
-        id: entity.id ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
-        fullName: entity.fullName,
+  static AuthHiveModel fromEntity(AuthEntity entity) => AuthHiveModel.withData(
+        id: entity.id,
+        name: entity.name,
         email: entity.email,
-        password: entity.password,
-        phone: entity.phone,
-        profilePicture: entity.profilePicture,
+        avatar: entity.avatar,
+        role: entity.role,
+        provider: entity.provider,
       );
 }
