@@ -1,46 +1,49 @@
+import 'package:coffeshop_mobile/app/locale/app_strings.dart';
+import 'package:coffeshop_mobile/app/locale/locale_state.dart';
+import 'package:coffeshop_mobile/app/locale/locale_view_model.dart';
 import 'package:coffeshop_mobile/app/routes/app_routes.dart';
 import 'package:coffeshop_mobile/app/theme/app_colors.dart';
 import 'package:coffeshop_mobile/feature/onboarding/presentation/widgets/onboarding_content.dart';
 import 'package:coffeshop_mobile/feature/onboarding/presentation/widgets/page_indicator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class OnboardingPage extends StatefulWidget {
+class OnboardingPage extends ConsumerStatefulWidget {
   const OnboardingPage({super.key});
 
   @override
-  State<OnboardingPage> createState() => _OnboardingPageState();
+  ConsumerState<OnboardingPage> createState() => _OnboardingPageState();
 }
 
-class _OnboardingPageState extends State<OnboardingPage> {
+class _OnboardingPageState extends ConsumerState<OnboardingPage> {
   final PageController _controller = PageController();
   int _currentPage = 0;
 
-  static const _pages = [
-    OnboardingData(
-      title: 'Premium Coffee Beans',
-      subtitle:
-          'Discover single-origin beans sourced directly from the finest farms around the world.',
-      image: 'assets/images/coffee_1.jpg',
-      backgroundColor: Color(0xFFF5EBE0),
-    ),
-    OnboardingData(
-      title: 'Fresh Every Roast',
-      subtitle:
-          'Our beans are roasted to order — dark, medium, or light — to match your perfect cup.',
-      image: 'assets/images/coffee_4.jpg',
-      backgroundColor: Color(0xFFFFF3E8),
-    ),
-    OnboardingData(
-      title: 'Order at Your Doorstep',
-      subtitle:
-          'Get your favourite coffee beans delivered fresh, straight to your home.',
-      image: 'assets/images/coffee_6.jpg',
-      backgroundColor: Color(0xFFEDE0D4),
-    ),
-  ];
+  List<OnboardingData> _pages(AppLanguage lang) => [
+        OnboardingData(
+          title: AppStrings.get('onboardTitle1', lang),
+          subtitle: AppStrings.get('onboardSubtitle1', lang),
+          image: 'assets/images/coffee_1.jpg',
+          backgroundColor: const Color(0xFFF5EBE0),
+        ),
+        OnboardingData(
+          title: AppStrings.get('onboardTitle2', lang),
+          subtitle: AppStrings.get('onboardSubtitle2', lang),
+          image: 'assets/images/coffee_4.jpg',
+          backgroundColor: const Color(0xFFFFF3E8),
+        ),
+        OnboardingData(
+          title: AppStrings.get('onboardTitle3', lang),
+          subtitle: AppStrings.get('onboardSubtitle3', lang),
+          image: 'assets/images/coffee_6.jpg',
+          backgroundColor: const Color(0xFFEDE0D4),
+        ),
+      ];
+
+  static const _pageCount = 3;
 
   void _nextPage() {
-    if (_currentPage < _pages.length - 1) {
+    if (_currentPage < _pageCount - 1) {
       _controller.nextPage(
         duration: const Duration(milliseconds: 400),
         curve: Curves.easeInOut,
@@ -62,10 +65,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isLast = _currentPage == _pages.length - 1;
+    final isLast = _currentPage == _pageCount - 1;
+    final lang = ref.watch(localeViewModelProvider).language;
+    final pages = _pages(lang);
 
     return Scaffold(
-      backgroundColor: _pages[_currentPage].backgroundColor,
+      backgroundColor: pages[_currentPage].backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -78,9 +83,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     ? const SizedBox.shrink()
                     : TextButton(
                         onPressed: _skip,
-                        child: const Text(
-                          'Skip',
-                          style: TextStyle(
+                        child: Text(
+                          AppStrings.get('skip', lang),
+                          style: const TextStyle(
                             fontFamily: 'Montserrat',
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
@@ -94,10 +99,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             Expanded(
               child: PageView.builder(
                 controller: _controller,
-                itemCount: _pages.length,
+                itemCount: pages.length,
                 onPageChanged: (i) => setState(() => _currentPage = i),
                 itemBuilder: (_, i) =>
-                    OnboardingContent(data: _pages[i]),
+                    OnboardingContent(data: pages[i]),
               ),
             ),
 
@@ -108,7 +113,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 children: [
                   // Page indicator
                   PageIndicator(
-                    count: _pages.length,
+                    count: pages.length,
                     current: _currentPage,
                   ),
                   const SizedBox(height: 32),
@@ -128,7 +133,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         elevation: 0,
                       ),
                       child: Text(
-                        isLast ? 'Get Started' : 'Next',
+                        isLast ? AppStrings.get('getStarted', lang) : AppStrings.get('next', lang),
                         style: const TextStyle(
                           fontFamily: 'Montserrat',
                           fontSize: 15,

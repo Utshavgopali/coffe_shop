@@ -76,10 +76,10 @@ class OnboardingContent extends StatelessWidget {
           Text(
             data.subtitle,
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Montserrat',
               fontSize: 14,
-              color: Colors.black54,
+              color: context.appTextSecondary,
               height: 1.6,
             ),
           ),
