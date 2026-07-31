@@ -1,0 +1,13 @@
+group 'com.vodemn.light_sensor'
+version '1.0'
+
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 36
+    namespace 'com.vodemn.light_sensor'
+
+    defaultConfig {
+        minSdkVersion 16
+    }
+}
